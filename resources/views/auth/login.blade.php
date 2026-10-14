@@ -127,12 +127,6 @@
             border-radius: 15px;
         }
 
-        .tarjeta + .tarjeta {
-            margin-top: 0;
-        }
-
-        /* líneas de colores superiores */
-
         .franja {
             height: 7px;
             display: flex;
@@ -200,15 +194,15 @@
             margin: 7px auto 13px;
         }
 
-        .boton-rojo {
-            display: inline-block;
-            margin-top: 25px;
-            width: 165px;
-            height: 34px;
-            border: none;
-            border-radius: 18px;
-            background: #a90000;
-            cursor: pointer;
+        /* =========================
+           IMAGEN
+        ========================= */
+
+        .logo1 {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            opacity: 0.5;
         }
 
         /* =========================
@@ -246,6 +240,7 @@
         }
 
         .campo {
+            position: relative;
             display: flex;
             align-items: center;
             border-bottom: 3px solid #999;
@@ -267,12 +262,16 @@
             outline: none;
             font-size: 20px;
             color: #555;
-            padding: 7px 0;
+            padding: 7px 40px 7px 0;
         }
 
         .campo input::placeholder {
             color: #666;
         }
+
+        /* =========================
+           BOTÓN LOGIN
+        ========================= */
 
         .boton-login {
             display: flex;
@@ -303,11 +302,78 @@
             );
         }
 
-        .captcha {
+        /* =========================
+           REGISTRO
+        ========================= */
+
+        .registro {
             text-align: center;
-            margin-top: 20px;
-            color: #777;
-            font-size: 12px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .registro-texto {
+            margin: 0 0 10px;
+            color: #666;
+            font-size: 15px;
+        }
+
+        .registro a {
+            color: #a90000;
+            font-weight: bold;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .registro a:hover {
+            color: #720000;
+            text-decoration: underline;
+        }
+
+        /* =========================
+           MENSAJES
+        ========================= */
+
+        .mensaje-error {
+            background: #f8d7da;
+            color: #842029;
+            border: 1px solid #f1aeb5;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .mensaje-exito {
+            background: #d1e7dd;
+            color: #0f5132;
+            border: 1px solid #a3cfbb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* =========================
+           MOSTRAR CONTRASEÑA
+        ========================= */
+
+        .boton-ver-clave {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px;
+        }
+
+        .boton-ver-clave:hover {
+            opacity: 0.7;
         }
 
         /* =========================
@@ -397,11 +463,9 @@
 
     <header class="header">
 
-        {{-- Posteriormente colocaremos el logo oficial --}}
-        <img
-            src="{{ asset('dashmin/img/logo.png') }}"
-            class="logo"
-            alt="Logo">
+        <img src="{{ asset('img/logo.jpg') }}"
+             alt="Logo Ministerio de Educación"
+             class="logo">
 
         <div class="header-text">
 
@@ -434,20 +498,16 @@
 
 
     <!-- ==========================================
-         CONTENIDO
+         CONTENIDO PRINCIPAL
     =========================================== -->
 
     <main class="principal">
 
-
         <!-- ======================================
-             IZQUIERDA
+             COLUMNA IZQUIERDA
         ======================================= -->
 
         <section class="columna-izquierda">
-
-
-            <!-- GUÍA DE TRÁMITES -->
 
             <div class="tarjeta">
 
@@ -459,10 +519,9 @@
 
                 <div class="contenido-tarjeta">
 
-                    <img
-                        src="{{ asset('dashmin/img/escudo.png') }}"
-                        class="escudo"
-                        alt="Escudo">
+                    <img src="{{ asset('img/logo1.jpg') }}"
+                         alt="Logo"
+                         class="logo1">
 
                     <h2>
                         GUÍA DE TRÁMITES Y PROCEDIMIENTOS DE
@@ -481,41 +540,6 @@
 
             </div>
 
-
-            <!-- DESCARGAS -->
-
-            <div class="tarjeta">
-
-                <div class="franja">
-                    <div class="rojo"></div>
-                    <div class="amarillo"></div>
-                    <div class="verde"></div>
-                </div>
-
-                <div class="contenido-tarjeta">
-
-                    <img
-                        src="{{ asset('dashmin/img/escudo.png') }}"
-                        class="escudo"
-                        alt="Escudo">
-
-                    <h2>
-                        SECCIÓN DE DESCARGA DE
-                        <br>
-                        FORMULARIOS Y GUÍAS ADICIONALES
-                        <br>
-                        PARA TRÁMITES DE DATOS
-                    </h2>
-
-                    <button
-                        type="button"
-                        class="boton-rojo">
-                    </button>
-
-                </div>
-
-            </div>
-
         </section>
 
 
@@ -528,17 +552,29 @@
             <div class="login">
 
                 <div class="login-header">
-
                     Ingreso a la Sección de Gestión de
                     <br>
                     Trámites - DDE Cochabamba
-
                 </div>
-
 
                 <div class="login-body">
 
-                    <form>
+                    {{-- MENSAJE DE ÉXITO --}}
+                    @if (session('success'))
+                        <div class="mensaje-exito">
+                            {{ session('success') }}
+                        </div>
+                    @endif
+
+                    {{-- ERRORES --}}
+                    @if ($errors->any())
+                        <div class="mensaje-error">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
+
+                    <form method="POST" action="{{ route('login.post') }}">
+                        @csrf
 
                         <!-- USUARIO -->
 
@@ -550,8 +586,11 @@
 
                             <input
                                 type="text"
+                                name="usuario"
                                 placeholder="Código R.D.A. / Usuario"
-                                autocomplete="username">
+                                autocomplete="username"
+                                value="{{ old('usuario') }}"
+                                required>
 
                         </div>
 
@@ -566,22 +605,29 @@
 
                             <input
                                 type="password"
+                                name="clave"
+                                id="clave"
                                 placeholder="Contraseña"
-                                autocomplete="current-password">
+                                autocomplete="current-password"
+                                required>
 
-                            <div class="icono">
-                                ◉
-                            </div>
+                            <button
+                                type="button"
+                                id="mostrarClave"
+                                class="boton-ver-clave"
+                                title="Mostrar contraseña">
+                                👁
+                            </button>
 
                         </div>
 
 
-                        <!-- BOTÓN -->
+                        <!-- BOTÓN INGRESAR -->
 
                         <div class="boton-login">
 
-                            <button type="button">
-                                INGRESAR
+                            <button type="submit">
+                                Ingresar
                             </button>
 
                         </div>
@@ -589,8 +635,20 @@
                     </form>
 
 
-                    <div class="captcha">
-                        Protected by reCAPTCHA
+                    <!-- ==================================
+                         REGISTRO DE NUEVO USUARIO
+                    =================================== -->
+
+                    <div class="registro">
+
+                        <p class="registro-texto">
+                            ¿No tienes una cuenta?
+                        </p>
+
+                        <a href="{{ route('register') }}">
+                            Crear una cuenta
+                        </a>
+
                     </div>
 
                 </div>
@@ -601,5 +659,38 @@
 
     </main>
 
+
+    <!-- ==========================================
+         JAVASCRIPT
+    =========================================== -->
+
+    <script>
+
+        const campoClave = document.getElementById('clave');
+        const botonMostrarClave = document.getElementById('mostrarClave');
+
+        if (campoClave && botonMostrarClave) {
+
+            botonMostrarClave.addEventListener('click', function () {
+
+                if (campoClave.type === 'password') {
+
+                    campoClave.type = 'text';
+                    botonMostrarClave.title = 'Ocultar contraseña';
+
+                } else {
+
+                    campoClave.type = 'password';
+                    botonMostrarClave.title = 'Mostrar contraseña';
+
+                }
+
+            });
+
+        }
+
+    </script>
+
 </body>
 </html>
+
