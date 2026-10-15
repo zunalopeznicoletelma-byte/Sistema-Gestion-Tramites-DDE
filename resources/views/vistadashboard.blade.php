@@ -1684,9 +1684,10 @@
         {{-- =================================================
              USUARIO
              cod_acceso = 3
+             cod_acceso = 7
         ================================================== --}}
 
-        @if ($codAcceso === 3)
+       @if (in_array($codAcceso, [3, 7]))
 
             <div class="menu-title">
 
@@ -1746,6 +1747,15 @@
 
                 </span>
 
+            </a>
+                        <!-- INSTITUTOS -->
+
+            <a
+                href="{{ url('/institutos') }}"
+                class="nav-link"
+            >
+                <i class="fa-solid fa-school"></i>
+                <span>Institutos</span>
             </a>
 
         @endif
