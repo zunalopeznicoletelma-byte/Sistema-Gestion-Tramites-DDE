@@ -141,7 +141,7 @@ Route::get(
 */
 
 Route::get('/tipos-tramites', [TipoTramiteController::class, 'index'])
-    ->middleware('acceso:1')
+    ->middleware('acceso:1,3')
     ->name('tipos-tramites');
 
 Route::post('/tipos-tramites', [TipoTramiteController::class, 'store'])
