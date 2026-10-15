@@ -281,9 +281,7 @@
     }
 
     @media print {
-        .institutos-page .no-imprimir {
-            display: none !important;
-        }
+        
 
         .institutos-page .tarjeta-estadistica,
         .institutos-page .panel-institutos {
@@ -330,12 +328,7 @@
             </p>
         </div>
 
-        <div class="d-flex gap-2 flex-wrap no-imprimir">
-            <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
-                <i class="bi bi-printer me-1"></i>
-                Imprimir
-            </button>
-        </div>
+        
     </div>
 
     <div class="row g-3">

@@ -351,7 +351,7 @@
     }
 
     @media print {
-        .solicitudes-page .no-imprimir,
+       
         .solicitudes-page .accion,
         .solicitudes-page .modal {
             display: none !important;
@@ -428,13 +428,9 @@
             </p>
         </div>
 
-        <div class="d-flex gap-2 flex-wrap no-imprimir">
+        <div>
             @if(($modo ?? 'listar') === 'listar')
-                <button type="button" class="btn btn-outline-secondary"
-                        onclick="window.print()">
-                    <i class="fa-solid fa-print me-1"></i>
-                    Imprimir
-                </button>
+                
 
                 <a href="{{ route('solicitudes.create') }}"
                    class="btn-institucional">
@@ -987,6 +983,12 @@
                                             <i class="fa-solid fa-user-check"></i>
                                         </button>
                                     @endif
+                                    <a href="{{ route('informes.plantilla') }}"
+                                       class="accion"
+                                       title="Descargar plantilla de informe Word"
+                                       aria-label="Descargar plantilla de informe Word">
+                                        <i class="fa-solid fa-file-word"></i>
+                                    </a>
 
                                     <a href="{{ route('solicitudes.edit', $item->cod_solicitud) }}"
                                        class="accion accion-editar"
@@ -1019,7 +1021,7 @@
                                             Puede registrar una nueva solicitud utilizando el botón superior.
                                         </p>
                                         <a href="{{ route('solicitudes.create') }}"
-                                           class="btn-institucional no-imprimir">
+                                           >
                                             <i class="fa-solid fa-plus"></i>
                                             Nueva solicitud
                                         </a>

@@ -13,6 +13,7 @@ use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\InstitutoController;
 use App\Http\Controllers\PlanEstudioController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\InformeController;
 /*
 |--------------------------------------------------------------------------
 | DASHBOARD
@@ -216,3 +217,37 @@ Route::get('/register', [RegisterController::class, 'create'])
 
 Route::post('/register', [RegisterController::class, 'store'])
     ->name('register.store');
+
+Route::get(
+    '/solicitudes/{cod_solicitud}/informe-word',
+    [InformeController::class, 'generarWord']
+)->name('solicitudes.informeWord')
+  ->middleware('acceso:2');
+
+
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+
+Route::get('/informes/plantilla', function () {
+    // Verificar que el usuario haya iniciado sesión.
+    if (!session()->has('usuario_id')) {
+        return redirect()->route('login');
+    }
+
+    // Permitir la descarga al Técnico Departamental.
+    if ((int) session('cod_acceso') !== 2) {
+        abort(403, 'No tiene permiso para descargar la plantilla.');
+    }
+
+    $ruta = public_path('plantillas/plantilla_informe.docx');
+
+    if (!file_exists($ruta)) {
+        abort(404, 'No se encontró la plantilla de informe.');
+    }
+
+    return response()->download(
+        $ruta,
+        'plantilla_informe.docx'
+    );
+})->name('informes.plantilla');
