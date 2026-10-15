@@ -423,7 +423,6 @@
                         <th>Nombre del trámite</th>
                         <th>Descripción</th>
                         <th>Requisitos</th>
-                        <th>Tiempo estimado</th>
                         <th>Estado</th>
                         <th class="text-center">Acciones</th>
                     </tr>
@@ -450,10 +449,7 @@
                                 {{ \Illuminate\Support\Str::limit($tipo->requisitos ?? 'No especificados', 65) }}
                             </td>
 
-                            <td>
-                                <i class="bi bi-clock me-1 text-secondary"></i>
-                                {{ $tipo->tiempo_estimado }} días
-                            </td>
+                          
 
                             <td>
                                 @if((int)$tipo->habilitado === 1)
@@ -477,7 +473,7 @@
                                             data-nombre="{{ $tipo->nombre_tramite }}"
                                             data-descripcion="{{ $tipo->descripcion }}"
                                             data-requisitos="{{ $tipo->requisitos }}"
-                                            data-tiempo="{{ $tipo->tiempo_estimado }}">
+                                            >
                                         <i class="bi bi-pencil-square"></i>
                                     </button>
 
@@ -593,9 +589,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="tiempo_estimado" class="form-label">
-                            Tiempo estimado (días) <span class="text-danger">*</span>
-                        </label>
+                        
                         <input type="number"
                                class="form-control"
                                id="tiempo_estimado"
@@ -679,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
             botonGuardar.innerHTML =
                 '<i class="bi bi-save me-1"></i>Guardar tipo de trámite';
 
-            document.getElementById('tiempo_estimado').value = 5;
+           
         });
     }
 
