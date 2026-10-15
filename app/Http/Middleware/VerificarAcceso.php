@@ -18,6 +18,7 @@ class VerificarAcceso
         // Obtener el código de acceso del usuario
         $codAcceso = session('cod_acceso');
 
+
         // Si la ruta requiere roles específicos,
         // verificar que el usuario tenga uno de ellos
         if (!empty($roles) && !in_array($codAcceso, $roles)) {
