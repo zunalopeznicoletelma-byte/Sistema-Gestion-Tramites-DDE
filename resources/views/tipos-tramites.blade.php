@@ -1,4 +1,3 @@
-
 @extends('layouts.app')
 
 @section('title', 'Gestión de Tipos de Trámites')
@@ -306,29 +305,34 @@
     }
 </style>
 
+@php
+    $esAdministrador = (int) session('cod_acceso') === 1;
+@endphp
+
 <div class="tipos-page">
 
-    {{-- Encabezado de la página --}}
     <div class="page-heading">
         <div>
             <h2>
                 <i class="bi bi-card-list me-2" style="color:#b5121b;"></i>
                 Gestión de Tipos de Trámites
             </h2>
-            <p>Administración de los trámites disponibles en el sistema institucional.</p>
+            <p>Consulta de los trámites disponibles en el sistema institucional.</p>
         </div>
 
-        <button type="button"
-                class="btn btn-institucional"
-                id="btnNuevoTipo"
-                data-bs-toggle="modal"
-                data-bs-target="#modalTipo">
-            <i class="bi bi-plus-circle me-1"></i>
-            Nuevo tipo de trámite
-        </button>
+        {{-- Solo el administrador puede crear tipos --}}
+        @if($esAdministrador)
+            <button type="button"
+                    class="btn btn-institucional"
+                    id="btnNuevoTipo"
+                    data-bs-toggle="modal"
+                    data-bs-target="#modalTipo">
+                <i class="bi bi-plus-circle me-1"></i>
+                Nuevo tipo de trámite
+            </button>
+        @endif
     </div>
 
-    {{-- Mensajes del sistema --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle-fill me-2"></i>
@@ -356,9 +360,8 @@
         </div>
     @endif
 
-    {{-- Tarjetas de estadísticas --}}
+    {{-- Estadísticas --}}
     <div class="row g-3 mb-4">
-
         <div class="col-12 col-md-4">
             <div class="stat-card">
                 <div class="stat-icon icon-total">
@@ -394,16 +397,17 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    {{-- Tabla de tipos de trámites --}}
+    {{-- Tabla de consulta --}}
     <div class="section-card">
-
         <div class="section-header">
             <div>
-                <h5><i class="bi bi-table me-2" style="color:#b5121b;"></i>Tipos registrados</h5>
-                <p>Consulta y administración de los tipos de trámites.</p>
+                <h5>
+                    <i class="bi bi-table me-2" style="color:#b5121b;"></i>
+                    Tipos registrados
+                </h5>
+                <p>Consulta de los tipos de trámites disponibles.</p>
             </div>
 
             <div class="search-box">
@@ -424,7 +428,9 @@
                         <th>Descripción</th>
                         <th>Requisitos</th>
                         <th>Estado</th>
-                        <th class="text-center">Acciones</th>
+                        @if($esAdministrador)
+                            <th class="text-center">Acciones</th>
+                        @endif
                     </tr>
                 </thead>
 
@@ -432,9 +438,7 @@
                     @forelse($tipos as $tipo)
                         <tr class="fila-tipo">
                             <td>
-                                <span class="type-code">
-                                    {{ $tipo->cod_tipo }}
-                                </span>
+                                <span class="type-code">{{ $tipo->cod_tipo }}</span>
                             </td>
 
                             <td>
@@ -449,10 +453,8 @@
                                 {{ \Illuminate\Support\Str::limit($tipo->requisitos ?? 'No especificados', 65) }}
                             </td>
 
-                          
-
                             <td>
-                                @if((int)$tipo->habilitado === 1)
+                                @if((int) $tipo->habilitado === 1)
                                     <span class="status-badge status-active">
                                         <i class="bi bi-check-circle me-1"></i>Habilitado
                                     </span>
@@ -463,54 +465,54 @@
                                 @endif
                             </td>
 
-                            <td class="text-center">
-                                <div class="d-flex justify-content-center gap-2">
-
-                                    <button type="button"
-                                            class="action-btn btnEditarTipo"
-                                            title="Editar tipo de trámite"
-                                            data-id="{{ $tipo->cod_tipo }}"
-                                            data-nombre="{{ $tipo->nombre_tramite }}"
-                                            data-descripcion="{{ $tipo->descripcion }}"
-                                            data-requisitos="{{ $tipo->requisitos }}"
-                                            >
-                                        <i class="bi bi-pencil-square"></i>
-                                    </button>
-
-                                    <form method="POST"
-                                          action="{{ url('/tipos-tramites/'.$tipo->cod_tipo.'/estado') }}"
-                                          onsubmit="return confirm('¿Desea cambiar el estado de este tipo de trámite?');">
-                                        @csrf
-                                        @method('PATCH')
-
-                                        <button type="submit"
-                                                class="action-btn toggle"
-                                                title="{{ (int)$tipo->habilitado === 1 ? 'Deshabilitar' : 'Habilitar' }}">
-                                            @if((int)$tipo->habilitado === 1)
-                                                <i class="bi bi-toggle-on"></i>
-                                            @else
-                                                <i class="bi bi-toggle-off"></i>
-                                            @endif
+                            {{-- Acciones administrativas solo para administrador --}}
+                            @if($esAdministrador)
+                                <td class="text-center">
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button type="button"
+                                                class="action-btn btnEditarTipo"
+                                                title="Editar tipo de trámite"
+                                                data-id="{{ $tipo->cod_tipo }}"
+                                                data-nombre="{{ $tipo->nombre_tramite }}"
+                                                data-descripcion="{{ $tipo->descripcion }}"
+                                                data-requisitos="{{ $tipo->requisitos }}">
+                                            <i class="bi bi-pencil-square"></i>
                                         </button>
-                                    </form>
 
-                                </div>
-                            </td>
+                                        <form method="POST"
+                                              action="{{ url('/tipos-tramites/'.$tipo->cod_tipo.'/estado') }}"
+                                              onsubmit="return confirm('¿Desea cambiar el estado de este tipo de trámite?');">
+                                            @csrf
+                                            @method('PATCH')
+
+                                            <button type="submit"
+                                                    class="action-btn toggle"
+                                                    title="{{ (int) $tipo->habilitado === 1 ? 'Deshabilitar' : 'Habilitar' }}">
+                                                @if((int) $tipo->habilitado === 1)
+                                                    <i class="bi bi-toggle-on"></i>
+                                                @else
+                                                    <i class="bi bi-toggle-off"></i>
+                                                @endif
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            @endif
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="{{ $esAdministrador ? 6 : 5 }}">
                                 <div class="empty-state">
                                     <i class="bi bi-inbox"></i>
                                     <h6>No hay tipos de trámites registrados</h6>
-                                    <p class="mb-0">Utiliza el botón “Nuevo tipo de trámite” para registrar uno.</p>
+                                    <p class="mb-0">No existen tipos de trámites para mostrar.</p>
                                 </div>
                             </td>
                         </tr>
                     @endforelse
 
                     <tr id="sinResultados" style="display:none;">
-                        <td colspan="7">
+                        <td colspan="{{ $esAdministrador ? 6 : 5 }}">
                             <div class="empty-state">
                                 <i class="bi bi-search"></i>
                                 <h6>No se encontraron resultados</h6>
@@ -524,97 +526,93 @@
 
         <div class="p-3 border-top text-secondary small">
             <i class="bi bi-info-circle me-1"></i>
-            Los cambios de estado permiten habilitar o deshabilitar un tipo de trámite sin eliminar su registro.
+            Los tipos de trámites habilitados están disponibles para su consulta en el sistema.
         </div>
-
     </div>
-
 </div>
 
-{{-- Modal para registrar y editar --}}
-<div class="modal fade" id="modalTipo" tabindex="-1" aria-labelledby="modalTipoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
+{{-- Modal de registro y edición: solo se incluye para administrador --}}
+@if($esAdministrador)
+    <div class="modal fade"
+         id="modalTipo"
+         tabindex="-1"
+         aria-labelledby="modalTipoLabel"
+         aria-hidden="true">
 
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title" id="modalTipoLabel">
-                        <i class="bi bi-plus-circle me-2"></i>Nuevo tipo de trámite
-                    </h5>
-                    <small>Completa los datos solicitados.</small>
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="modalTipoLabel">
+                            <i class="bi bi-plus-circle me-2"></i>Nuevo tipo de trámite
+                        </h5>
+                        <small>Completa los datos solicitados.</small>
+                    </div>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Cerrar"></button>
                 </div>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                <form id="formTipo"
+                      action="{{ route('tipos-tramites.store') }}"
+                      method="POST">
+                    @csrf
+                    <input type="hidden" name="_method" id="metodoTipo" value="POST">
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="nombre_tramite" class="form-label">
+                                Nombre del trámite <span class="text-danger">*</span>
+                            </label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="nombre_tramite"
+                                   name="nombre_tramite"
+                                   maxlength="150"
+                                   required
+                                   value="{{ old('nombre_tramite') }}"
+                                   placeholder="Ej. Modificación de datos personales">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control"
+                                      id="descripcion"
+                                      name="descripcion"
+                                      rows="3"
+                                      placeholder="Describe el trámite">{{ old('descripcion') }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="requisitos" class="form-label">Requisitos</label>
+                            <textarea class="form-control"
+                                      id="requisitos"
+                                      name="requisitos"
+                                      rows="3"
+                                      placeholder="Detalla los requisitos necesarios">{{ old('requisitos') }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light">
+                        <button type="button"
+                                class="btn btn-outline-secondary"
+                                data-bs-dismiss="modal">
+                            Cancelar
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-institucional"
+                                id="btnGuardarTipo">
+                            <i class="bi bi-save me-1"></i>Guardar tipo de trámite
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <form id="formTipo"
-                  action="{{ route('tipos-tramites.store') }}"
-                  method="POST">
-                @csrf
-
-                <input type="hidden" name="_method" id="metodoTipo" value="POST">
-
-                <div class="modal-body">
-
-                    <div class="mb-3">
-                        <label for="nombre_tramite" class="form-label">
-                            Nombre del trámite <span class="text-danger">*</span>
-                        </label>
-                        <input type="text"
-                               class="form-control"
-                               id="nombre_tramite"
-                               name="nombre_tramite"
-                               maxlength="150"
-                               required
-                               value="{{ old('nombre_tramite') }}"
-                               placeholder="Ej. Modificación de datos personales">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="descripcion" class="form-label">Descripción</label>
-                        <textarea class="form-control"
-                                  id="descripcion"
-                                  name="descripcion"
-                                  rows="3"
-                                  placeholder="Describe el trámite">{{ old('descripcion') }}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="requisitos" class="form-label">Requisitos</label>
-                        <textarea class="form-control"
-                                  id="requisitos"
-                                  name="requisitos"
-                                  rows="3"
-                                  placeholder="Detalla los requisitos necesarios">{{ old('requisitos') }}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        
-                        <input type="number"
-                               class="form-control"
-                               id="tiempo_estimado"
-                               name="tiempo_estimado"
-                               min="1"
-                               required
-                               value="{{ old('tiempo_estimado', 5) }}">
-                    </div>
-
-                </div>
-
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        Cancelar
-                    </button>
-
-                    <button type="submit" class="btn btn-institucional" id="btnGuardarTipo">
-                        <i class="bi bi-save me-1"></i>Guardar tipo de trámite
-                    </button>
-                </div>
-            </form>
-
         </div>
     </div>
-</div>
+@endif
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -622,20 +620,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const filas = document.querySelectorAll('#tablaTipos tbody tr.fila-tipo');
     const sinResultados = document.getElementById('sinResultados');
 
-    const modalElemento = document.getElementById('modalTipo');
-    const modal = modalElemento
-        ? bootstrap.Modal.getOrCreateInstance(modalElemento)
-        : null;
-
-    const formulario = document.getElementById('formTipo');
-    const tituloModal = document.getElementById('modalTipoLabel');
-    const botonGuardar = document.getElementById('btnGuardarTipo');
-    const metodo = document.getElementById('metodoTipo');
-
-    const urlRegistro = @json(route('tipos-tramites.store'));
-    const urlBase = @json(url('/tipos-tramites'));
-
-    // Búsqueda en la tabla
+    // Búsqueda disponible para ambos roles
     if (buscar) {
         buscar.addEventListener('input', function () {
             const termino = this.value.toLocaleLowerCase('es').trim();
@@ -658,7 +643,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Preparar el formulario para un nuevo registro
+    // El siguiente código solo se ejecuta si existe el modal administrativo
+    const modalElemento = document.getElementById('modalTipo');
+
+    if (!modalElemento) {
+        return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+    const formulario = document.getElementById('formTipo');
+    const tituloModal = document.getElementById('modalTipoLabel');
+    const botonGuardar = document.getElementById('btnGuardarTipo');
+    const metodo = document.getElementById('metodoTipo');
+
+    const urlRegistro = @json(route('tipos-tramites.store'));
+    const urlBase = @json(url('/tipos-tramites'));
+
     const btnNuevo = document.getElementById('btnNuevoTipo');
 
     if (btnNuevo) {
@@ -672,12 +672,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             botonGuardar.innerHTML =
                 '<i class="bi bi-save me-1"></i>Guardar tipo de trámite';
-
-           
         });
     }
 
-    // Preparar el formulario para editar un registro existente
     document.querySelectorAll('.btnEditarTipo').forEach(function (boton) {
         boton.addEventListener('click', function () {
             const id = this.dataset.id;
@@ -695,9 +692,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('requisitos').value =
                 this.dataset.requisitos || '';
 
-            document.getElementById('tiempo_estimado').value =
-                this.dataset.tiempo || 5;
-
             tituloModal.innerHTML =
                 '<i class="bi bi-pencil-square me-2"></i>Editar tipo de trámite';
 
@@ -708,11 +702,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Si hay errores de validación, abrir el modal para corregirlos.
     @if($errors->any())
-        if (modal) {
-            modal.show();
-        }
+        modal.show();
     @endif
 });
 </script>
