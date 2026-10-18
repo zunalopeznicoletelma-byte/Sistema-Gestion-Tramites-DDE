@@ -14,6 +14,20 @@ use App\Http\Controllers\InstitutoController;
 use App\Http\Controllers\PlanEstudioController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\InformeController;
+
+/*
+|--------------------------------------------------------------------------
+| PÁGINA PRINCIPAL
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/', function () {
+    if (session()->has('usuario_id')) {
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login');
+})->name('inicio');
 /*
 |--------------------------------------------------------------------------
 | DASHBOARD
