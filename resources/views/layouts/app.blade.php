@@ -496,11 +496,13 @@
                     <span>Revisar solicitudes</span>
                 </a>
 
-                <a href="{{ url('/historial-solicitudes') }}"
-                   class="nav-link {{ str_starts_with($rutaActual, 'historial-solicitudes') ? 'active' : '' }}">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    <span>Historial de solicitudes</span>
-                </a>
+               
+<a href="{{ route('solicitudes.historialGeneral') }}"
+   class="nav-link {{ str_starts_with($rutaActual, 'historial-solicitudes') ? 'active' : '' }}">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    <span>Historial de solicitudes</span>
+</a>
+
 
                 <a href="{{ url('/institutos') }}"
                    class="nav-link {{ str_starts_with($rutaActual, 'institutos') ? 'active' : '' }}">

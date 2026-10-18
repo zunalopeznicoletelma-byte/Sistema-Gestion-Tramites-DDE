@@ -5,16 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Solicitud;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SolicitudController extends Controller
 {
     /**
      * LISTAR SOLICITUDES
-     *
-     * Administrador (1): todas las solicitudes.
-     * Técnico Departamental (2): todas las solicitudes.
-     * Directivo de Instituto (3): sus propias solicitudes.
-     * Usuario Solicitante (7): sus propias solicitudes.
      */
     public function index()
     {
@@ -31,42 +27,12 @@ class SolicitudController extends Controller
             }
 
             $consulta = DB::table('e_solici as s')
-                ->join(
-                    'e_usuario as u',
-                    's.cod_usuario',
-                    '=',
-                    'u.cod_usuario'
-                )
-                ->leftJoin(
-                    'b_tipos as t',
-                    's.cod_tipo',
-                    '=',
-                    't.cod_tipo'
-                )
-                ->leftJoin(
-                    'b_instituto as i',
-                    's.cod_instituto',
-                    '=',
-                    'i.cod_instituto'
-                )
-                ->leftJoin(
-                    'b_estado_tramite as es',
-                    's.cod_estado',
-                    '=',
-                    'es.cod_estado'
-                )
-                ->leftJoin(
-                    'b_plan_estudio as p',
-                    's.cod_plan',
-                    '=',
-                    'p.cod_plan'
-                )
-                ->leftJoin(
-                    'b_carrera as c',
-                    'p.cod_carrera',
-                    '=',
-                    'c.cod_carrera'
-                )
+                ->join('e_usuario as u', 's.cod_usuario', '=', 'u.cod_usuario')
+                ->leftJoin('b_tipos as t', 's.cod_tipo', '=', 't.cod_tipo')
+                ->leftJoin('b_instituto as i', 's.cod_instituto', '=', 'i.cod_instituto')
+                ->leftJoin('b_estado_tramite as es', 's.cod_estado', '=', 'es.cod_estado')
+                ->leftJoin('b_plan_estudio as p', 's.cod_plan', '=', 'p.cod_plan')
+                ->leftJoin('b_carrera as c', 'p.cod_carrera', '=', 'c.cod_carrera')
                 ->where('s.activo', 1)
                 ->select(
                     's.cod_solicitud',
@@ -79,14 +45,12 @@ class SolicitudController extends Controller
                     's.observacion',
                     's.activo',
                     'u.usuario as usuario',
-                    DB::raw(
-                        "LTRIM(RTRIM(CONCAT(
-                            COALESCE(u.nombre1, ''), ' ',
-                            COALESCE(u.nombre2, ''), ' ',
-                            COALESCE(u.paterno, ''), ' ',
-                            COALESCE(u.materno, '')
-                        ))) as solicitante"
-                    ),
+                    DB::raw("LTRIM(RTRIM(CONCAT(
+                        COALESCE(u.nombre1, ''), ' ',
+                        COALESCE(u.nombre2, ''), ' ',
+                        COALESCE(u.paterno, ''), ' ',
+                        COALESCE(u.materno, '')
+                    ))) as solicitante"),
                     't.nombre_tramite',
                     'i.nombre_inst as instituto',
                     'c.nombre_carrera as carrera',
@@ -94,23 +58,11 @@ class SolicitudController extends Controller
                     'es.nombre_estado as estado'
                 );
 
-            /*
-             * ADMINISTRADOR Y TÉCNICO:
-             * pueden consultar todas las solicitudes activas.
-             */
-            if (in_array($codAcceso, [1, 2], true)) {
-                // No se aplica filtro por usuario.
-            } else {
-                /*
-                 * DIRECTIVO Y SOLICITANTE:
-                 * solo consultan sus propias solicitudes.
-                 */
+            if (!in_array($codAcceso, [1, 2], true)) {
                 $consulta->where('s.cod_usuario', $codUsuario);
             }
 
-            $solicitudes = $consulta
-                ->orderByDesc('s.cod_solicitud')
-                ->get();
+            $solicitudes = $consulta->orderByDesc('s.cod_solicitud')->get();
 
             $estados = DB::table('b_estado_tramite')
                 ->where('habilitado', 1)
@@ -123,16 +75,15 @@ class SolicitudController extends Controller
                 ->orderBy('nombre1')
                 ->get();
 
-            return view(
-                'solicitudes',
-                compact('solicitudes', 'estados', 'usuarios')
-            );
+            return view('solicitudes', compact('solicitudes', 'estados', 'usuarios'));
 
         } catch (\Throwable $e) {
+            Log::error('Error al listar solicitudes: ' . $e->getMessage());
+
             return view('solicitudes', [
-                'solicitudes' => [],
-                'estados' => [],
-                'usuarios' => [],
+                'solicitudes' => collect(),
+                'estados' => collect(),
+                'usuarios' => collect(),
                 'error' => 'No se pudieron cargar las solicitudes. Verifique la conexión y vuelva a intentarlo.'
             ]);
         }
@@ -148,9 +99,7 @@ class SolicitudController extends Controller
                 return redirect()->route('login');
             }
 
-            $codAcceso = (int) session('cod_acceso');
-
-            if (!in_array($codAcceso, [1, 2, 3, 7], true)) {
+            if (!in_array((int) session('cod_acceso'), [1, 2, 3, 7], true)) {
                 return $this->accesoDenegado();
             }
 
@@ -165,32 +114,19 @@ class SolicitudController extends Controller
                 ->get();
 
             $carreras = DB::table('b_carrera as c')
-                ->join(
-                    'b_instituto as i',
-                    'c.cod_instituto',
-                    '=',
-                    'i.cod_instituto'
-                )
+                ->join('b_instituto as i', 'c.cod_instituto', '=', 'i.cod_instituto')
                 ->where('c.habilitado', 1)
                 ->where('i.habilitado', 1)
-                ->select(
-                    'c.cod_carrera',
-                    'c.nombre_carrera',
-                    'c.cod_instituto'
-                )
+                ->select('c.cod_carrera', 'c.nombre_carrera', 'c.cod_instituto')
                 ->orderBy('c.nombre_carrera')
                 ->get();
 
-            return view(
-                'solicitudes.create',
-                compact('tipos', 'institutos', 'carreras')
-            );
+            return view('solicitudes.create', compact('tipos', 'institutos', 'carreras'));
 
         } catch (\Throwable $e) {
-            return back()->with(
-                'error',
-                'No se pudieron cargar los datos del formulario.'
-            );
+            Log::error('Error al cargar formulario de solicitud: ' . $e->getMessage());
+
+            return back()->with('error', 'No se pudieron cargar los datos del formulario.');
         }
     }
 
@@ -200,16 +136,12 @@ class SolicitudController extends Controller
     public function store(Request $request)
     {
         if (!session('usuario_id')) {
-            return redirect()
-                ->route('login')
-                ->withErrors([
-                    'usuario' => 'La sesión ha expirado. Debe iniciar sesión nuevamente.'
-                ]);
+            return redirect()->route('login')->withErrors([
+                'usuario' => 'La sesión ha expirado. Debe iniciar sesión nuevamente.'
+            ]);
         }
 
-        $codAcceso = (int) session('cod_acceso');
-
-        if (!in_array($codAcceso, [1, 2, 3, 7], true)) {
+        if (!in_array((int) session('cod_acceso'), [1, 2, 3, 7], true)) {
             return $this->accesoDenegado();
         }
 
@@ -286,14 +218,16 @@ class SolicitudController extends Controller
                 'observacion' => $observacion,
             ]);
 
-            return redirect()
-                ->route('solicitudes.index')
+            return redirect()->route('solicitudes.index')
                 ->with('success', 'La solicitud fue registrada correctamente.');
 
         } catch (\Throwable $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'No se pudo registrar la solicitud. Verifique los datos e inténtelo nuevamente.');
+            Log::error('Error al registrar solicitud: ' . $e->getMessage());
+
+            return back()->withInput()->with(
+                'error',
+                'No se pudo registrar la solicitud. Verifique los datos e inténtelo nuevamente.'
+            );
         }
     }
 
@@ -310,8 +244,7 @@ class SolicitudController extends Controller
             $solicitud = Solicitud::obtener($cod_solicitud);
 
             if (!$solicitud) {
-                return redirect()
-                    ->route('solicitudes.index')
+                return redirect()->route('solicitudes.index')
                     ->with('error', 'La solicitud no fue encontrada.');
             }
 
@@ -326,12 +259,7 @@ class SolicitudController extends Controller
                 ->get();
 
             $planes = DB::table('b_plan_estudio as p')
-                ->join(
-                    'b_carrera as c',
-                    'p.cod_carrera',
-                    '=',
-                    'c.cod_carrera'
-                )
+                ->join('b_carrera as c', 'p.cod_carrera', '=', 'c.cod_carrera')
                 ->where('p.habilitado', 1)
                 ->where('c.habilitado', 1)
                 ->select(
@@ -350,14 +278,18 @@ class SolicitudController extends Controller
                 ->orderBy('cod_estado')
                 ->get();
 
-            return view(
-                'solicitudes.edit',
-                compact('solicitud', 'tipos', 'institutos', 'planes', 'estados')
-            );
+            return view('solicitudes.edit', compact(
+                'solicitud',
+                'tipos',
+                'institutos',
+                'planes',
+                'estados'
+            ));
 
         } catch (\Throwable $e) {
-            return redirect()
-                ->route('solicitudes.index')
+            Log::error('Error al cargar solicitud para edición: ' . $e->getMessage());
+
+            return redirect()->route('solicitudes.index')
                 ->with('error', 'No se pudo cargar la solicitud.');
         }
     }
@@ -384,15 +316,13 @@ class SolicitudController extends Controller
         try {
             $codAcceso = (int) session('cod_acceso');
 
-            // Solo Administrador puede modificar los datos completos.
             if ($codAcceso !== 1) {
                 $solicitudActual = DB::table('e_solici')
                     ->where('cod_solicitud', $cod_solicitud)
                     ->first();
 
                 if (!$solicitudActual) {
-                    return redirect()
-                        ->route('solicitudes.index')
+                    return redirect()->route('solicitudes.index')
                         ->with('error', 'La solicitud no fue encontrada.');
                 }
 
@@ -406,14 +336,16 @@ class SolicitudController extends Controller
 
             Solicitud::actualizar($cod_solicitud, $datos);
 
-            return redirect()
-                ->route('solicitudes.index')
+            return redirect()->route('solicitudes.index')
                 ->with('success', 'La solicitud fue actualizada correctamente.');
 
         } catch (\Throwable $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'No se pudo actualizar la solicitud. Verifique los datos e inténtelo nuevamente.');
+            Log::error('Error al actualizar solicitud: ' . $e->getMessage());
+
+            return back()->withInput()->with(
+                'error',
+                'No se pudo actualizar la solicitud. Verifique los datos e inténtelo nuevamente.'
+            );
         }
     }
 
@@ -422,9 +354,7 @@ class SolicitudController extends Controller
      */
     public function destroy($cod_solicitud)
     {
-        $codAcceso = (int) session('cod_acceso');
-
-        if ($codAcceso !== 1) {
+        if ((int) session('cod_acceso') !== 1) {
             return $this->accesoDenegado();
         }
 
@@ -435,15 +365,13 @@ class SolicitudController extends Controller
         try {
             Solicitud::eliminar($cod_solicitud);
 
-            return redirect()
-                ->route('solicitudes.index')
+            return redirect()->route('solicitudes.index')
                 ->with('success', 'La solicitud fue eliminada correctamente.');
 
         } catch (\Throwable $e) {
-            return back()->with(
-                'error',
-                'No se pudo eliminar la solicitud.'
-            );
+            Log::error('Error al eliminar solicitud: ' . $e->getMessage());
+
+            return back()->with('error', 'No se pudo eliminar la solicitud.');
         }
     }
 
@@ -452,12 +380,10 @@ class SolicitudController extends Controller
      */
     public function cambiarEstado(Request $request, $cod_solicitud)
     {
-        return redirect()
-            ->route('solicitudes.index')
-            ->with(
-                'error',
-                'El cambio manual de estado no está habilitado. La solicitud debe ser procesada mediante la revisión técnica.'
-            );
+        return redirect()->route('solicitudes.index')->with(
+            'error',
+            'El cambio manual de estado no está habilitado. La solicitud debe ser procesada mediante la revisión técnica.'
+        );
     }
 
     /**
@@ -468,11 +394,9 @@ class SolicitudController extends Controller
         $codUsuario = session('usuario_id');
 
         if (!$codUsuario) {
-            return redirect()
-                ->route('login')
-                ->withErrors([
-                    'usuario' => 'La sesión ha expirado. Debe iniciar sesión nuevamente.'
-                ]);
+            return redirect()->route('login')->withErrors([
+                'usuario' => 'La sesión ha expirado. Debe iniciar sesión nuevamente.'
+            ]);
         }
 
         if ((int) session('cod_acceso') !== 2) {
@@ -492,8 +416,7 @@ class SolicitudController extends Controller
                 ->exists();
 
             if (!$existe) {
-                return redirect()
-                    ->route('solicitudes.index')
+                return redirect()->route('solicitudes.index')
                     ->with('error', 'La solicitud no fue encontrada o está inactiva.');
             }
 
@@ -505,26 +428,31 @@ class SolicitudController extends Controller
                 $request->observacion
             );
 
-            return redirect()
-                ->route('solicitudes.index')
-                ->with(
-                    'success',
-                    'La solicitud fue procesada correctamente como ' .
-                    strtolower($request->decision) . '.'
-                );
+            return redirect()->route('solicitudes.index')->with(
+                'success',
+                'La solicitud fue procesada correctamente como ' .
+                strtolower($request->decision) . '.'
+            );
 
         } catch (\Throwable $e) {
-            return back()
-                ->withInput()
-                ->with('error', 'No se pudo procesar la revisión técnica. Verifique la solicitud e inténtelo nuevamente.');
+            Log::error('Error en revisión técnica: ' . $e->getMessage());
+
+            return back()->withInput()->with(
+                'error',
+                'No se pudo procesar la revisión técnica. Verifique la solicitud e inténtelo nuevamente.'
+            );
         }
     }
 
     /**
-     * MOSTRAR HISTORIAL
+     * HISTORIAL INDIVIDUAL DE UNA SOLICITUD
      */
     public function historial($cod_solicitud)
     {
+        if (!session('usuario_id')) {
+            return redirect()->route('login');
+        }
+
         try {
             if (!$this->solicitudAccesible($cod_solicitud)) {
                 return $this->accesoDenegado();
@@ -533,30 +461,95 @@ class SolicitudController extends Controller
             $solicitud = Solicitud::obtener($cod_solicitud);
 
             if (!$solicitud) {
-                return redirect()
-                    ->route('solicitudes.index')
+                return redirect()->route('solicitudes.index')
                     ->with('error', 'La solicitud no fue encontrada.');
             }
 
             $historial = Solicitud::historial($cod_solicitud);
 
+            return view('solicitudes.historial', compact('solicitud', 'historial'));
+
+        } catch (\Throwable $e) {
+            Log::error('Error en historial individual: ' . $e->getMessage());
+
+            return redirect()->route('solicitudes.index')
+                ->with('error', 'No se pudo obtener el historial individual.');
+        }
+    }
+
+    /**
+     * HISTORIAL GENERAL
+     * Acceso exclusivo para el Técnico Departamental.
+     */
+    public function historialGeneral()
+    {
+        if (!session('usuario_id')) {
+            return redirect()->route('login');
+        }
+
+        if ((int) session('cod_acceso') !== 2) {
+            return $this->accesoDenegado();
+        }
+
+        try {
+            $historial = DB::table('e_historial_solicitud as h')
+                ->join(
+                    'e_solici as s',
+                    's.cod_solicitud',
+                    '=',
+                    'h.cod_solicitud'
+                )
+                ->join(
+                    'b_estado_tramite as e',
+                    'e.cod_estado',
+                    '=',
+                    'h.cod_estado'
+                )
+                ->join(
+                    'e_usuario as u',
+                    'u.cod_usuario',
+                    '=',
+                    'h.cod_usuario'
+                )
+                ->where('s.activo', 1)
+                ->select(
+                    'h.cod_historial',
+                    'h.cod_solicitud',
+                    'h.fecha',
+                    'e.nombre_estado',
+                    'h.observacion',
+                    DB::raw("LTRIM(RTRIM(CONCAT(
+                        COALESCE(u.paterno, ''), ' ',
+                        COALESCE(u.materno, ''), ' ',
+                        COALESCE(u.nombre1, ''), ' ',
+                        COALESCE(u.nombre2, '')
+                    ))) AS usuario")
+                )
+                ->orderByDesc('h.fecha')
+                ->get();
+
             return view(
-                'solicitudes.historial',
-                compact('solicitud', 'historial')
+                'solicitudes.historial-general',
+                compact('historial')
             );
 
         } catch (\Throwable $e) {
-            return redirect()
-                ->route('solicitudes.index')
-                ->with('error', 'No se pudo obtener el historial.');
+            Log::error('Error en historial general: ' . $e->getMessage(), [
+                'archivo' => $e->getFile(),
+                'linea' => $e->getLine(),
+            ]);
+
+            // Mostrar el error técnico temporalmente para identificar la causa.
+            return response()->json([
+                'error' => $e->getMessage(),
+                'archivo' => $e->getFile(),
+                'linea' => $e->getLine(),
+            ], 500);
         }
     }
 
     /**
      * VERIFICAR ACCESO A UNA SOLICITUD
-     *
-     * Administrador y Técnico: cualquier solicitud activa.
-     * Directivo y Solicitante: solo sus propias solicitudes activas.
      */
     private function solicitudAccesible($cod_solicitud)
     {
@@ -589,11 +582,9 @@ class SolicitudController extends Controller
      */
     private function accesoDenegado()
     {
-        return redirect()
-            ->route('solicitudes.index')
-            ->with(
-                'error',
-                'No tiene autorización para realizar esta acción.'
-            );
+        return redirect()->route('solicitudes.index')->with(
+            'error',
+            'No tiene autorización para realizar esta acción.'
+        );
     }
 }

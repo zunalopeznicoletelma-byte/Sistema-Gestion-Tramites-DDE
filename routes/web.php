@@ -265,3 +265,17 @@ Route::get('/informes/plantilla', function () {
         'plantilla_informe.docx'
     );
 })->name('informes.plantilla');
+
+
+/*
+|--------------------------------------------------------------------------
+| HISTORIAL GENERAL DE SOLICITUDES
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/historial-solicitudes',
+    [SolicitudController::class, 'historialGeneral']
+)
+    ->middleware('acceso:2')
+    ->name('solicitudes.historialGeneral');
