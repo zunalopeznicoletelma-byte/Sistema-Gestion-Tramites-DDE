@@ -19,29 +19,12 @@ class ReporteController extends Controller
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
         ]);
 
-        // Total general de solicitudes registradas.
-        $totalSolicitudes = DB::table('e_solici')
-            ->count();
-
-        // Cantidad de solicitudes agrupadas por estado.
-        $solicitudesPorEstado = DB::table('e_solici as s')
-            ->join(
-                'b_estado_tramite as e',
-                's.cod_estado',
-                '=',
-                'e.cod_estado'
-            )
-            ->select(
-                'e.cod_estado',
-                'e.nombre_estado',
-                DB::raw('COUNT(*) AS cantidad')
-            )
-            ->groupBy('e.cod_estado', 'e.nombre_estado')
-            ->orderBy('e.cod_estado')
-            ->get();
-
-        // Consulta principal del reporte detallado.
-        $consulta = DB::table('e_solici as s')
+        /*
+         * Consulta base:
+         * se reutiliza para que las estadísticas, los gráficos
+         * y la tabla respondan a los mismos filtros.
+         */
+        $consultaBase = DB::table('e_solici as s')
             ->leftJoin(
                 'e_usuario as u',
                 's.cod_usuario',
@@ -65,7 +48,147 @@ class ReporteController extends Controller
                 's.cod_estado',
                 '=',
                 'e.cod_estado'
+            );
+
+        // Aplicar filtro por estado.
+        if ($request->filled('estado')) {
+            $consultaBase->where(
+                's.cod_estado',
+                $filtros['estado']
+            );
+        }
+
+        // Aplicar fecha inicial.
+        if ($request->filled('fecha_inicio')) {
+            $consultaBase->whereDate(
+                's.fecha_solicitud',
+                '>=',
+                $filtros['fecha_inicio']
+            );
+        }
+
+        // Aplicar fecha final.
+        if ($request->filled('fecha_fin')) {
+            $consultaBase->whereDate(
+                's.fecha_solicitud',
+                '<=',
+                $filtros['fecha_fin']
+            );
+        }
+
+        /*
+         * Total de solicitudes que cumplen los filtros.
+         */
+        $totalFiltrado = (clone $consultaBase)
+            ->count('s.cod_solicitud');
+
+        /*
+         * Total general sin filtros.
+         * Se conserva como referencia del sistema.
+         */
+        $totalSolicitudes = DB::table('e_solici')
+            ->count();
+
+        /*
+         * Estadísticas por estado.
+         */
+        $solicitudesPorEstado = (clone $consultaBase)
+            ->select(
+                'e.cod_estado',
+                'e.nombre_estado',
+                DB::raw('COUNT(s.cod_solicitud) AS cantidad')
             )
+            ->groupBy(
+                'e.cod_estado',
+                'e.nombre_estado'
+            )
+            ->orderBy('e.cod_estado')
+            ->get()
+            ->map(function ($estado) use ($totalFiltrado) {
+                $estado->porcentaje = $totalFiltrado > 0
+                    ? round(
+                        ($estado->cantidad / $totalFiltrado) * 100,
+                        2
+                    )
+                    : 0;
+
+                return $estado;
+            });
+
+        /*
+         * Estadísticas por tipo de trámite.
+         */
+        $solicitudesPorTipo = (clone $consultaBase)
+            ->select(
+                't.cod_tipo',
+                't.nombre_tramite',
+                DB::raw('COUNT(s.cod_solicitud) AS cantidad')
+            )
+            ->groupBy(
+                't.cod_tipo',
+                't.nombre_tramite'
+            )
+            ->orderByDesc('cantidad')
+            ->get()
+            ->map(function ($tipo) use ($totalFiltrado) {
+                $tipo->porcentaje = $totalFiltrado > 0
+                    ? round(
+                        ($tipo->cantidad / $totalFiltrado) * 100,
+                        2
+                    )
+                    : 0;
+
+                return $tipo;
+            });
+
+        /*
+         * Solicitudes agrupadas por mes.
+         * Se utiliza SQL Server para extraer año y mes.
+         */
+        $solicitudesPorMes = (clone $consultaBase)
+            ->whereNotNull('s.fecha_solicitud')
+            ->selectRaw("
+                YEAR(s.fecha_solicitud) AS anio,
+                MONTH(s.fecha_solicitud) AS mes,
+                COUNT(s.cod_solicitud) AS cantidad
+            ")
+            ->groupByRaw("
+                YEAR(s.fecha_solicitud),
+                MONTH(s.fecha_solicitud)
+            ")
+            ->orderByRaw("
+                YEAR(s.fecha_solicitud),
+                MONTH(s.fecha_solicitud)
+            ")
+            ->get()
+            ->map(function ($registro) {
+                $meses = [
+                    1 => 'Enero',
+                    2 => 'Febrero',
+                    3 => 'Marzo',
+                    4 => 'Abril',
+                    5 => 'Mayo',
+                    6 => 'Junio',
+                    7 => 'Julio',
+                    8 => 'Agosto',
+                    9 => 'Septiembre',
+                    10 => 'Octubre',
+                    11 => 'Noviembre',
+                    12 => 'Diciembre',
+                ];
+
+                $registro->periodo =
+                    $meses[(int) $registro->mes]
+                    . ' '
+                    . $registro->anio;
+
+                return $registro;
+            });
+
+        /*
+         * Tabla detallada de solicitudes.
+         */
+        $solicitudes = (clone $consultaBase)
             ->select(
                 's.cod_solicitud',
                 's.fecha_solicitud',
@@ -84,59 +207,53 @@ class ReporteController extends Controller
                 'i.nombre_inst',
                 'e.cod_estado',
                 'e.nombre_estado'
-            );
-
-        // Filtrar por estado cuando se seleccione uno.
-        $consulta->when(
-            $request->filled('estado'),
-            function ($query) use ($request) {
-                $query->where('s.cod_estado', $request->input('estado'));
-            }
-        );
-
-        // Filtrar desde una fecha determinada.
-        $consulta->when(
-            $request->filled('fecha_inicio'),
-            function ($query) use ($request) {
-                $query->whereDate(
-                    's.fecha_solicitud',
-                    '>=',
-                    $request->input('fecha_inicio')
-                );
-            }
-        );
-
-        // Filtrar hasta una fecha determinada.
-        $consulta->when(
-            $request->filled('fecha_fin'),
-            function ($query) use ($request) {
-                $query->whereDate(
-                    's.fecha_solicitud',
-                    '<=',
-                    $request->input('fecha_fin')
-                );
-            }
-        );
-
-        // Obtener las solicitudes que cumplen los filtros.
-        $solicitudes = $consulta
+            )
             ->orderByDesc('s.fecha_solicitud')
             ->get();
 
-        // Estados disponibles para el filtro.
+        /*
+         * Estados disponibles para el filtro.
+         */
         $estados = DB::table('b_estado_tramite')
             ->orderBy('cod_estado')
             ->get();
 
-        // Cantidad de registros que muestra el reporte filtrado.
-        $totalFiltrado = $solicitudes->count();
+        /*
+         * Tipos de trámite disponibles.
+         */
+        $tiposTramite = DB::table('b_tipos')
+            ->orderBy('nombre_tramite')
+            ->get();
+
+        /*
+         * Texto del período seleccionado para mostrarlo
+         * en la pantalla y en la impresión.
+         */
+        $periodoReporte = 'Todos los períodos';
+
+        if (
+            $request->filled('fecha_inicio')
+            || $request->filled('fecha_fin')
+        ) {
+            $inicio = $request->input('fecha_inicio')
+                ?: 'Inicio no especificado';
+
+            $fin = $request->input('fecha_fin')
+                ?: 'Fin no especificado';
+
+            $periodoReporte = $inicio . ' al ' . $fin;
+        }
 
         return view('reportes', compact(
             'totalSolicitudes',
+            'totalFiltrado',
             'solicitudesPorEstado',
+            'solicitudesPorTipo',
+            'solicitudesPorMes',
             'solicitudes',
             'estados',
-            'totalFiltrado'
+            'tiposTramite',
+            'periodoReporte'
         ));
     }
 }
