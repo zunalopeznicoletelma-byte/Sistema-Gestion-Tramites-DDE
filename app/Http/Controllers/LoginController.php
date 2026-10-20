@@ -50,7 +50,7 @@ class LoginController extends Controller
                     ]);
             }
 
-            // Guardar los datos necesarios en la sesión
+            // Guardar los datos del usuario
             session([
                 'usuario_id' => $usuario->cod_usuario,
                 'usuario_nombre' => $usuario->usuario,
