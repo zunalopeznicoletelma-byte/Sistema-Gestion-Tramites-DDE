@@ -255,6 +255,7 @@ class ReporteController extends Controller
             'estados',
             'tiposTramite',
             'periodoReporte'
+            //
         ));
     }
 }
