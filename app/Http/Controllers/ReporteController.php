@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 class ReporteController extends Controller
 {
     /**
-     * Mostrar los reportes administrativos.
+     * Presentar la información de los reportes administrativos.
      */
     public function index(Request $request)
     {
@@ -20,9 +20,9 @@ class ReporteController extends Controller
         ]);
 
         /*
-         * Consulta base:
-         * se reutiliza para que las estadísticas, los gráficos
-         * y la tabla respondan a los mismos filtros.
+         * Construir la consulta principal de solicitudes.
+         * Esta consulta sirve de base para obtener las estadísticas,
+         * los gráficos y el detalle de los resultados filtrados.
          */
         $consultaBase = DB::table('e_solici as s')
             ->leftJoin(
@@ -50,7 +50,7 @@ class ReporteController extends Controller
                 'e.cod_estado'
             );
 
-        // Aplicar filtro por estado.
+       // Incorporar el estado seleccionado, cuando corresponda.
         if ($request->filled('estado')) {
             $consultaBase->where(
                 's.cod_estado',
@@ -58,7 +58,7 @@ class ReporteController extends Controller
             );
         }
 
-        // Aplicar fecha inicial.
+       // Limitar los resultados desde la fecha indicada.
         if ($request->filled('fecha_inicio')) {
             $consultaBase->whereDate(
                 's.fecha_solicitud',
@@ -67,7 +67,7 @@ class ReporteController extends Controller
             );
         }
 
-        // Aplicar fecha final.
+        // Limitar los resultados hasta la fecha indicada.
         if ($request->filled('fecha_fin')) {
             $consultaBase->whereDate(
                 's.fecha_solicitud',
@@ -77,20 +77,22 @@ class ReporteController extends Controller
         }
 
         /*
-         * Total de solicitudes que cumplen los filtros.
+         * Contabilizar las solicitudes que coinciden con los filtros.
          */
+
         $totalFiltrado = (clone $consultaBase)
             ->count('s.cod_solicitud');
 
         /*
-         * Total general sin filtros.
-         * Se conserva como referencia del sistema.
+         * Obtener el número total de solicitudes registradas,
+         * independientemente de los filtros seleccionados.
          */
         $totalSolicitudes = DB::table('e_solici')
             ->count();
 
         /*
-         * Estadísticas por estado.
+         * Agrupar las solicitudes según su estado y calcular
+         * el porcentaje que representa cada grupo.
          */
         $solicitudesPorEstado = (clone $consultaBase)
             ->select(
@@ -116,7 +118,8 @@ class ReporteController extends Controller
             });
 
         /*
-         * Estadísticas por tipo de trámite.
+         * Clasificar las solicitudes por tipo de trámite
+         * y calcular la proporción correspondiente a cada tipo.
          */
         $solicitudesPorTipo = (clone $consultaBase)
             ->select(
@@ -142,9 +145,10 @@ class ReporteController extends Controller
             });
 
         /*
-         * Solicitudes agrupadas por mes.
-         * Se utiliza SQL Server para extraer año y mes.
+         * Organizar las solicitudes por año y mes de registro.
+         * Las funciones YEAR y MONTH corresponden a SQL Server.
          */
+
         $solicitudesPorMes = (clone $consultaBase)
             ->whereNotNull('s.fecha_solicitud')
             ->selectRaw("
@@ -186,7 +190,8 @@ class ReporteController extends Controller
             });
 
         /*
-         * Tabla detallada de solicitudes.
+         * Recuperar los datos detallados que se mostrarán
+         * en la tabla de solicitudes del reporte.
          */
         $solicitudes = (clone $consultaBase)
             ->select(
@@ -211,23 +216,19 @@ class ReporteController extends Controller
             ->orderByDesc('s.fecha_solicitud')
             ->get();
 
-        /*
-         * Estados disponibles para el filtro.
-         */
+      // Consultar los estados que pueden seleccionarse como filtro.
         $estados = DB::table('b_estado_tramite')
             ->orderBy('cod_estado')
             ->get();
 
-        /*
-         * Tipos de trámite disponibles.
-         */
+        // Obtener los tipos de trámite disponibles en el sistema.
         $tiposTramite = DB::table('b_tipos')
             ->orderBy('nombre_tramite')
             ->get();
 
-        /*
-         * Texto del período seleccionado para mostrarlo
-         * en la pantalla y en la impresión.
+       /*
+         * Definir el texto del período que se presentará
+         * en la pantalla de reportes y en la impresión.
          */
         $periodoReporte = 'Todos los períodos';
 
@@ -243,7 +244,7 @@ class ReporteController extends Controller
 
             $periodoReporte = $inicio . ' al ' . $fin;
         }
-
+// Enviar los resultados obtenidos a la vista de reportes.
         return view('reportes', compact(
             'totalSolicitudes',
             'totalFiltrado',
