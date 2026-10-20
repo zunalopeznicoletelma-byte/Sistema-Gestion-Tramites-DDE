@@ -232,7 +232,7 @@ class SolicitudController extends Controller
     }
 
     /**
-     * FORMULARIO PARA EDITAR SOLICITUD
+     * FORMULARIO PARA EDITAR SOLICITUD EN EL SISTEMA
      */
     public function edit($cod_solicitud)
     {
