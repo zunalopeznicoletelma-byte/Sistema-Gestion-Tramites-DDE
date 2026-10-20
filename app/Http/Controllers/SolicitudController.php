@@ -131,7 +131,7 @@ class SolicitudController extends Controller
     }
 
     /**
-     * REGISTRAR SOLICITUD
+     * REGISTRAR SOLICITUD DE USUARIOS EN EL SISTEMA
      */
     public function store(Request $request)
     {
