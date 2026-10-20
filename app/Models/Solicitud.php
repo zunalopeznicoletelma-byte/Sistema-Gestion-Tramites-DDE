@@ -163,7 +163,7 @@ class Solicitud extends Model
     }
 
     /**
-     * Obtener el historial de una solicitud.
+     * Obtener el historial
      */
     public static function historial($cod_solicitud)
     {
