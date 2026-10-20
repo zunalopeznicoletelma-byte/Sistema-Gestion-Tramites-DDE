@@ -10,7 +10,7 @@ class VerificarAcceso
 {
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        // Verificar si existe una sesión iniciada
+        // Verificar si existe una sesión inicio
         if (!session()->has('usuario_id')) {
             return redirect()->route('login');
         }
