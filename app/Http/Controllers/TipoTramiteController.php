@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 
 class TipoTramiteController extends Controller
 {
+    /**
+     * funcionalidad de tipos de tramites
+     */
     public function index()
     {
         $tipos = TipoTramite::orderBy('cod_tipo', 'desc')->get();
