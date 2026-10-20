@@ -5,6 +5,9 @@ use Illuminate\Http\Request;
 
 class InstitutoController extends Controller
 {
+    /**
+     * funcionalidad de tipos de tramites
+     */
     public function index(Request $request)
     {
         $rutaArchivo = resource_path('data/institutos.php');
