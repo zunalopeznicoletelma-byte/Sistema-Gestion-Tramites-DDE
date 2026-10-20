@@ -12,7 +12,7 @@ use PhpOffice\PhpWord\IOFactory;
 class InformeController extends Controller
 {
     /**
-     * Generar informe técnico en formato Word.
+     * Generar informe técnico en formato Word y imrpimir.
      */
     public function generarWord($cod_solicitud)
     {
@@ -254,6 +254,9 @@ class InformeController extends Controller
                     'No se pudo generar el informe Word. '
                     . 'Revise el registro de errores de Laravel.'
                 );
+                /**
+     * Finalizar del cdocumento de word
+     */
         }
     }
 }
